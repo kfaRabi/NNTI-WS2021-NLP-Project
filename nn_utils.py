@@ -21,6 +21,10 @@ import math
 from early_stopping import EarlyStopping
 import nn_common as nnc
 
+
+# All the functions, methods and classes in this file have self-explanatory names.
+# We have added comments where something is ambigous
+
 def seed_all(random_state):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
@@ -30,7 +34,7 @@ def seed_all(random_state):
     np.random.seed(random_state)
     random.seed(random_state)
 
-
+# Word Embedding Model
 class Word2Vec(torch.nn.Module):
     def __init__(self, vocab_size, embedding_size = 300):
         super(Word2Vec, self).__init__()
@@ -44,6 +48,7 @@ class Word2Vec(torch.nn.Module):
 
         return F.log_softmax(z_w, dim = 1)
 
+# Encoder (based on LSTM and global attention) with CNN for sentiment classification
 class EncoderCNN(nn.Module):
     def __init__(self, Embedding, params):
         super(EncoderCNN, self).__init__()
@@ -104,8 +109,9 @@ class EncoderCNN(nn.Module):
         output = output.squeeze(0) if batch.shape[0] == 1 else output
         return output
 
+# Encodes Positional information to input sentence
+# Implemented follwing the paper: Attention Is All You Need by Ashish Vaswani at el.
 class PositionalEmbedding(nn.Module):
-
     def __init__(self, d_model, dropout=0.1, max_len=5000):
         super(PositionalEmbedding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
@@ -122,6 +128,7 @@ class PositionalEmbedding(nn.Module):
         x = x + self.pe[:x.size(0), :]
         return self.dropout(x)
 
+# Encoder (based on Transformers with self-attention) with CNN for sentiment classification
 class TransformerCNN(nn.Module):
     def __init__(self, params):
         super(TransformerCNN, self).__init__()
@@ -185,6 +192,9 @@ class TransformerCNN(nn.Module):
 
         return output
 
+# A helper class to load, preprocess data, build vocabulary, word to index and
+# sampling probablity from the preprocessed data
+# Alos, prepares the data loader for training and trains an embedding matrix like Word2Vec
 class EmbeddingContext():
     def __init__(self, params = {}):
         self.dataf = pd.DataFrame()
@@ -315,7 +325,8 @@ class EmbeddingContext():
         with open(f'{dataset_name}_em_learning_rate_{learning_rate}_bs_{batch_size}_ws_{window_size}.txt', 'w') as f:
             print(' '.join([str(ls) for ls in losses]), file=f)
 
-
+# Helper method to load and preprocess data and then build the vocabulary and word to index
+# This data context is used by the TrainingContext to prepare dataloader for training
 class DataContext():
     def __init__(self):
         self.dataf = None
@@ -345,7 +356,9 @@ class DataContext():
         self.word_to_index = nnc.convert_word_to_index(self.V)
 
 
-
+# Given the training hyperparams and assigning a DataContext, criterion, optimzer and scheduler,
+# it splits the data to train, valid and tests, then trains a model using the training data
+# Uses validation data to validate the moled during training and also tests after the training
 class TrainingContext():
     def __init__(self, params : dict):
         self.train_loader = []

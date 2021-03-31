@@ -15,6 +15,8 @@ import warnings
 from math import floor
 import seaborn as sns
 
+# All the functions in this file have self-explanatory names.
+# We have added comments where something is ambigous
 
 def get_device(log = False):
     CUDA_ID = None
@@ -91,13 +93,13 @@ def word_to_one_hot(word_idx, ONE_HOT_VECTOR_SIZE):
     v[word_idx] = 1
     return v
 
-def convert_word_to_index(V):
+def convert_word_to_index(V): # assigns an index to each word of the vocabulary
     w2idx = {}
     for idx, word in enumerate(V):
         w2idx[word] = idx
     return w2idx
 
-def batch_word_to_one_hot(batch, ONE_HOT_VECTOR_SIZE):
+def batch_word_to_one_hot(batch, ONE_HOT_VECTOR_SIZE): # to produce batches of one hot
     one_hot_batch = []
     for idx_tensor in batch:
         idx = idx_tensor.item()
@@ -105,7 +107,7 @@ def batch_word_to_one_hot(batch, ONE_HOT_VECTOR_SIZE):
         one_hot_batch.append(x)
     return torch.Tensor(one_hot_batch)
 
-def summary_stat(dataf, sentences):
+def summary_stat(dataf, sentences): # plots distributions and sumaary statistics
     dataf["preprocessed_sen_len"] = [len(text) for text in sentences]
 
     print(dataf.preprocessed_sen_len.describe())
@@ -126,6 +128,7 @@ def save_model(model, filename):
 def load_model(model, filename):
     model.load_state_dict(torch.load(filename), strict=False)
 
+# Calculates the number of times each word appears in all the sentences and finally devides by the total number of words
 def calc_rel_freq(V, texts, ONE_HOT_VECTOR_SIZE, word_to_index):
     rel_freq = [0.] * ONE_HOT_VECTOR_SIZE
     total = 0.
@@ -153,6 +156,7 @@ def sampling_prob(word_ind, rel_freq):
     rf = rel_freq[word_ind]
     return (sqrt(rf / 0.001) + 1.) * (0.001 / rf)
 
+# creates center, context pair for the given window size consider the sampling probablity
 def get_target_context(sentence, word_to_index, rel_freq, window_size = 2):
     sentence_to_indices = [word_to_index[word] for word in sentence]
     sentence_len = len(sentence_to_indices)
@@ -166,6 +170,7 @@ def get_target_context(sentence, word_to_index, rel_freq, window_size = 2):
             if np.random.random() < sampling_prob(sentence_to_indices[context_ind], rel_freq):
                 yield (sentence_to_indices[center_ind], sentence_to_indices[context_ind])
 
+# Helper method to plot training and validation loss and accuracy
 def plot_losses(train_losses, train_accs, valid_losses, valid_accs):
     checkpoint = valid_losses.index(min(valid_losses))
     xsteps = int(len(train_losses)/10)
@@ -182,6 +187,7 @@ def plot_losses(train_losses, train_accs, valid_losses, valid_accs):
     plt.legend()
     plt.show()
 
+# Helper method to store training losses and the model to a file
 def save_training_info(train_losses, train_accs, valid_losses, valid_accs, model, path):
     with open(path, 'w') as f:
         print(' '.join([str(ls) for ls in train_losses]), file = f)
@@ -192,6 +198,9 @@ def save_training_info(train_losses, train_accs, valid_losses, valid_accs, model
         print(path, file = f)
         print("\nTraining Session Info Stored")
 
+# Given the initial input shape of the first convolution layer, and convolution parameters,
+# it calculates the output shape of the final convolution layer.
+# We use this method to calculate number of neurons of the first fully connected layer
 def conv_out_shape(params, h, w):
     # For EncoderCNN, h: sent_len , w: hidden_weights_dim * (2 if bidirectional lstm else 1)
     # For TransformerCNN: h: sent_len, w: embedding_size
